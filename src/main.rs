@@ -3,10 +3,10 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use chrono::{Local, Utc};
-use env_logger::fmt::Color;
+use env_logger::fmt::style::Color;
 use ethers::prelude::*;
 use futures_util::TryStreamExt;
-use log::{debug, error, info, LevelFilter};
+use log::{debug, error, info, Level, LevelFilter};
 use once_cell::sync::{Lazy, OnceCell};
 use tokio_postgres::types::ToSql;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
@@ -31,19 +31,21 @@ const EXC_ST: &str ="update transactions_pool set status_code=$1,status=$2,updat
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     env_logger::builder()
-        .filter_level(LevelFilter::Warn)
+        .filter_level(LevelFilter::Debug)
         .format(|buf, record| {
-            let mut level_style = buf.style();
-            if record.level() == LevelFilter::Warn {
-                level_style.set_color(Color::Ansi256(206_u8));
+            let mut level_style = buf.default_level_style(record.level());
+            let reset = level_style.render_reset();
+            if record.level() == Level::Warn {
+                level_style = level_style.fg_color(Some(Color::Ansi256(206_u8.into())));
             }
+            let level_style = level_style.render();
             writeln!(
                 buf,
-                "[{} | line:{:<4}|{}]: {}",
+                "{level_style}[{} | line:{:<4}|{}]: {}{reset}",
                 Local::now().format("%H:%M:%S"),
                 record.line().unwrap_or(0),
-                level_style.value(record.level()),
-                level_style.value(record.args())
+                record.level(),
+                record.args()
             )
         })
         .init();
