@@ -1,0 +1,25 @@
+syntax = "proto3";
+package tx;
+
+
+enum TokenCode
+{
+  A = 0;
+  B = 1;
+  C = 2;
+  D = 3;
+  E = 4;
+}
+
+message Msg {
+  string from_user_id = 1;
+  string to_user_id = 2;
+  string order_id = 3;
+  int64 point = 4;
+  TokenCode coin_code = 5;
+  int64 gen_time = 6;
+  optional string ext_json = 7;
+  string tag_id = 8;
+  optional string store_id = 9;
+}
+
