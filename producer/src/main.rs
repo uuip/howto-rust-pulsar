@@ -80,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
         "gen_time": 0,
         "tag_id": tag_id,
     }))?;
-    producer.send(message).await?.await?;
+    producer.send_non_blocking(message).await?.await?;
     producer.close().await.expect("");
     Ok(())
 }
