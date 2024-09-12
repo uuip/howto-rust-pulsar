@@ -29,7 +29,7 @@ ethers = { version = "2.0.14", default-features = false, features = ["abigen", "
 pulsar = { version = "6.3.0", default-features = false, features = ["tokio-runtime", "compression"] }
 strum = { version = "0.26", features = ["derive"] }
 duplicate = "1.0.0"
-uint = "0.10.0"
+uint = "=0.9.5"
 rustc-hex = "2.1.0"
 
 [profile.release]
