@@ -1,5 +1,5 @@
 use std::io::Write;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 
 use chrono::{Local, Utc};
@@ -7,10 +7,10 @@ use env_logger::fmt::style::Color;
 use ethers::prelude::*;
 use futures_util::TryStreamExt;
 use log::{debug, error, info, Level, LevelFilter};
-use once_cell::sync::{Lazy, OnceCell};
-use tokio_postgres::types::ToSql;
+use once_cell::sync::Lazy;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use reqwest::Url;
+use tokio_postgres::types::ToSql;
 
 use crate::action::{persist_one, send_tx};
 use crate::error::AppError;
@@ -24,7 +24,7 @@ mod model;
 mod schema;
 mod setting;
 
-static CHAIN_ID: OnceCell<U256> = OnceCell::new();
+static CHAIN_ID: OnceLock<U256> = OnceLock::new();
 static SETTING: Lazy<Setting, fn() -> Setting> = Lazy::new(Setting::init);
 const EXC_ST: &str ="update transactions_pool set status_code=$1,status=$2,updated_at=current_timestamp,fail_reason=$3,request_time=$4 where tag_id=$5";
 
