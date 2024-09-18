@@ -86,7 +86,9 @@ async fn main() -> anyhow::Result<()> {
 
     let s_pool = pool.clone();
     let s_task = tokio::spawn(async move {
-        receive_message(consumer, s, s_pool).await.unwrap_or_else(|e| panic!("someerror{}",e));
+        receive_message(consumer, s, s_pool)
+            .await
+            .unwrap_or_else(|e| panic!("someerror{}", e));
     });
 
     for _ in 0..SETTING.batch_size {
