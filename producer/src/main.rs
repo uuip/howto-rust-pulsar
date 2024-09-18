@@ -1,17 +1,15 @@
-use std::io::Write;
-use std::sync::OnceLock;
 use chrono::Local;
 use env_logger::fmt::style::Color;
 use log::{info, Level, LevelFilter};
 use pulsar::{producer, proto, Pulsar, TokioExecutor};
 use serde_json::json;
+use std::io::Write;
+use std::sync::OnceLock;
 use uuid::Uuid;
 
-use crate::setting::Setting;
-
-use crate::schema::{Msg, MSG_SCHEMA};
-#[rustfmt::skip]
 use crate::model::TokenCode;
+use crate::schema::{Msg, MSG_SCHEMA};
+use crate::setting::Setting;
 
 mod model;
 mod schema;
@@ -43,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let schema: serde_json::Value = serde_json::from_str(MSG_SCHEMA)?;
-    let schema_data = serde_json::to_vec(&schema).unwrap();
+    let schema_data = serde_json::to_vec(&schema)?;
     let msg_schema = proto::Schema {
         schema_data,
         r#type: proto::schema::Type::Json as i32,
