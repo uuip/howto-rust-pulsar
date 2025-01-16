@@ -8,7 +8,7 @@ use env_logger::fmt::style::Color;
 use ethers::prelude::*;
 use futures_util::TryStreamExt;
 use log::{error, info, Level, LevelFilter};
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use pulsar::{Consumer, Pulsar, SubType, TokioExecutor};
 use reqwest::Url;
 use tokio_postgres::types::ToSql;
@@ -26,7 +26,7 @@ mod schema;
 mod setting;
 
 static CHAIN_ID: OnceLock<U256> = OnceLock::new();
-static SETTING: Lazy<Setting, fn() -> Setting> = Lazy::new(Setting::init);
+static SETTING: LazyLock<Setting, fn() -> Setting> = LazyLock::new(Setting::init);
 const EXC_ST: &str = "update transactions_pool set status_code=$1,status=$2,updated_at=current_timestamp,fail_reason=$3,request_time=$4 where tag_id=$5";
 
 fn init_logger() {

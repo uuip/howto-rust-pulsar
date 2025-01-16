@@ -7,7 +7,7 @@ use ethers::abi::AbiEncode;
 use ethers::prelude::transaction::eip2718::TypedTransaction;
 use ethers::prelude::*;
 use log::debug;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use serde_json::{json, Value};
 
 use crate::error::AppError;
@@ -16,7 +16,7 @@ use crate::{CHAIN_ID, SETTING};
 
 abigen!(Erc20Token, "erc20_abi.json");
 
-static FIELDS: Lazy<String> = Lazy::new(|| {
+static FIELDS: LazyLock<String> = LazyLock::new(|| {
     [
         "from_user_id",
         "to_user_id",
