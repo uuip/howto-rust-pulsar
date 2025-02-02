@@ -14,7 +14,7 @@ log = { version = "0.4.25", features = ["release_max_level_info"] }
 env_logger = "0.11.6"
 dotenvy = "0.15.7"
 chrono = { version = "0.4.39", default-features = false, features = ["clock", "serde"] }
-reqwest = { version = "=0.11.27", features = ["json", "gzip", "native-tls-alpn"] }
+reqwest = { version = "=0.11.27", features = ["json", "gzip"] }
 envy = "0.4.2"
 
 tokio = { version = "1.43.0", features = ["full"] }
