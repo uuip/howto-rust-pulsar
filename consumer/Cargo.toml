@@ -6,33 +6,35 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-serde_json = "1.0.117"
-serde = { version = "1.0.201", features = ["derive"] }
-anyhow = "1.0.83"
-thiserror = "1.0.60"
-log = { version = "0.4.21", features = ["release_max_level_info"] }
-env_logger = "0.11.3"
+serde_json = "1.0.137"
+serde = { version = "1.0.217", features = ["derive"] }
+anyhow = "1.0.95"
+thiserror = "2.0.11"
+log = { version = "0.4.25", features = ["release_max_level_info"] }
+env_logger = "0.11.6"
 dotenvy = "0.15.7"
-once_cell = "1.19.0"
-chrono = { version = "0.4.38", default-features = false, features = [ "clock", "serde" ] }
+chrono = { version = "0.4.39", default-features = false, features = ["clock", "serde"] }
 reqwest = { version = "=0.11.27", features = ["json", "gzip"] }
+envy = "0.4.2"
 
-tokio = { version = "1.37.0", features = ["full"] }
-async-channel = "2.3.0"
-futures-util = "0.3.30"
+tokio = { version = "1.43.0", features = ["full"] }
+async-channel = "2.3.1"
+futures-util = "0.3.31"
 
-tokio-postgres = { version = "0.7.10", features=["with-serde_json-1","with-chrono-0_4"]}
-deadpool-postgres = "0.13.2"
+tokio-postgres = { version = "0.7.12", features = ["with-serde_json-1", "with-chrono-0_4"] }
+deadpool-postgres = "0.14.1"
 postgres-from-row = "0.5.2"
 
-ethers = { version = "2.0.14", default-features = false, features = ["abigen", "legacy"]}
-pulsar = { version = "6.2.0", default-features = false, features = ["tokio-runtime", "compression"] }
+ethers = { version = "2.0.14", default-features = false, features = ["abigen", "legacy"] }
+pulsar = { version = "6.3.0", default-features = false, features = ["tokio-runtime", "compression"] }
 strum = { version = "0.26", features = ["derive"] }
-duplicate = "1.0.0"
-uint = "0.9.5"
+duplicate = "2.0.0"
+uint = "=0.9.5"
 rustc-hex = "2.1.0"
 
 [profile.release]
 lto = true
 strip = true
 codegen-units = 1
+panic = "abort"
+opt-level = 3

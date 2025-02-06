@@ -1,27 +1,25 @@
-use std::io::Write;
-
 use chrono::Local;
 use env_logger::fmt::style::Color;
 use log::{info, Level, LevelFilter};
-use once_cell::sync::Lazy;
 use pulsar::{producer, proto, Pulsar, TokioExecutor};
 use serde_json::json;
+use std::io::Write;
+use std::sync::OnceLock;
 use uuid::Uuid;
 
-use crate::setting::Setting;
-
-use crate::schema::{Msg, MSG_SCHEMA};
-#[rustfmt::skip]
 use crate::model::TokenCode;
+use crate::schema::{Msg, MSG_SCHEMA};
+use crate::setting::Setting;
 
 mod model;
 mod schema;
 mod setting;
 
-static SETTING: Lazy<Setting, fn() -> Setting> = Lazy::new(Setting::init);
+static SETTING: OnceLock<Setting> = OnceLock::new();
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let setting = SETTING.get_or_init(Setting::init);
     env_logger::builder()
         .filter_level(LevelFilter::Debug)
         .format(|buf, record| {
@@ -43,18 +41,18 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let schema: serde_json::Value = serde_json::from_str(MSG_SCHEMA)?;
-    let schema_data = serde_json::to_vec(&schema).unwrap();
+    let schema_data = serde_json::to_vec(&schema)?;
     let msg_schema = proto::Schema {
         schema_data,
         r#type: proto::schema::Type::Json as i32,
         ..Default::default()
     };
-    let pulsar: Pulsar<TokioExecutor> = Pulsar::builder(&SETTING.pulsar_addr, TokioExecutor)
+    let pulsar: Pulsar<TokioExecutor> = Pulsar::builder(&setting.pulsar_addr, TokioExecutor)
         .build()
         .await?;
     let mut producer = pulsar
         .producer()
-        .with_topic(&SETTING.topic)
+        .with_topic(&setting.topic)
         .with_options(producer::ProducerOptions {
             schema: Some(msg_schema),
             ..Default::default()
@@ -80,7 +78,7 @@ async fn main() -> anyhow::Result<()> {
         "gen_time": 0,
         "tag_id": tag_id,
     }))?;
-    producer.send(message).await?.await?;
+    producer.send_non_blocking(message).await?.await?;
     producer.close().await.expect("");
     Ok(())
 }

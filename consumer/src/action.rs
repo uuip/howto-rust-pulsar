@@ -7,7 +7,7 @@ use ethers::abi::AbiEncode;
 use ethers::prelude::transaction::eip2718::TypedTransaction;
 use ethers::prelude::*;
 use log::debug;
-use once_cell::sync::Lazy;
+use std::sync::LazyLock;
 use serde_json::{json, Value};
 
 use crate::error::AppError;
@@ -16,7 +16,7 @@ use crate::{CHAIN_ID, SETTING};
 
 abigen!(Erc20Token, "erc20_abi.json");
 
-static FIELDS: Lazy<String> = Lazy::new(|| {
+static FIELDS: LazyLock<String> = LazyLock::new(|| {
     [
         "from_user_id",
         "to_user_id",
@@ -37,8 +37,8 @@ pub struct FixedH256(pub H256);
 impl Display for FixedH256 {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "0x")?;
-        for i in &self.0 .0 {
-            write!(f, "{:02x}", i)?;
+        for byte in &self.0 .0 {
+            write!(f, "{:02x}", byte)?;
         }
         Ok(())
     }
@@ -46,9 +46,10 @@ impl Display for FixedH256 {
 
 pub async fn persist_one(pool: &Pool, data: &Msg) -> Result<u64, AppError> {
     let client = pool.get().await?;
-    let fields = FIELDS.as_str();
-    let st =
-        format!("INSERT INTO transactions_pool ({fields}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)");
+    let st = format!(
+        "INSERT INTO transactions_pool ({}) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)",
+        FIELDS.as_str()
+    );
     let rst = client
         .execute(
             &st,
@@ -90,11 +91,11 @@ pub async fn transfer_token(
         .ok_or(AppError::PrivateKeyError)?
         .parse::<LocalWallet>()?
         .with_chain_id(chain_id.as_u64());
+
     let data = json!([
         {"jsonrpc": "2.0", "method": "eth_gasPrice", "params": [], "id": 1},
         {"jsonrpc": "2.0", "method": "eth_getTransactionCount", "params": [from_addr, "latest"], "id": 2},
     ]);
-
     let rst: [Value; 2] = reqwest::Client::new()
         .post(&SETTING.rpc)
         .json(&data)
@@ -103,23 +104,26 @@ pub async fn transfer_token(
         .json()
         .await?;
     let [gas_price_rsp, nonce_rsp] = rst;
-    let tmp = gas_price_rsp["result"]
-        .as_str()
-        .ok_or(AppError::KeyError("result".into()))?;
-    let gas_price = U256::from_str(tmp)?;
-    let tmp = nonce_rsp["result"]
-        .as_str()
-        .ok_or(AppError::KeyError("result".into()))?;
-    let nonce = U256::from_str(tmp)?;
+    let gas_price = U256::from_str(
+        gas_price_rsp["result"]
+            .as_str()
+            .ok_or(AppError::KeyError("result".into()))?,
+    )?;
+    let nonce = U256::from_str(
+        nonce_rsp["result"]
+            .as_str()
+            .ok_or(AppError::KeyError("result".into()))?,
+    )?;
 
-    let func_call: FunctionCall<Arc<Provider<Http>>, Provider<Http>, bool> =
-        c.transfer(to.parse()?, value);
-    let tx_req = func_call
+    // let func_call: FunctionCall<Arc<Provider<Http>>, Provider<Http>, bool> =
+    //     c.transfer(to.parse()?, value);
+    let tx: TypedTransaction = c
+        .transfer(to.parse()?, value)
         .gas(50000)
         .gas_price(gas_price)
         .nonce(nonce)
-        .from(from_addr);
-    let tx: TypedTransaction = tx_req.tx;
+        .from(from_addr)
+        .tx;
     let signature = wallet.sign_transaction(&tx).await?;
     let raw_tx = tx.rlp_signed(&signature);
     let rst = w3.send_raw_transaction(raw_tx).await?;
@@ -134,7 +138,9 @@ pub async fn send_tx(
     msg: &Msg,
 ) -> Result<String, AppError> {
     let st = "select address,private_key from userinfo where user_id=$1";
-    let (from, to) = (&msg.from_user_id, &msg.to_user_id);
+    let from_user = client.query_one(st, &[&msg.from_user_id]).await?;
+    let to_user = client.query_one(st, &[&msg.to_user_id]).await?;
+
     let token_addr = match format!("token_{}", &msg.coin_code).as_str() {
         "token_a" => &SETTING.token_a,
         "token_b" => &SETTING.token_b,
@@ -143,9 +149,6 @@ pub async fn send_tx(
         "token_e" => &SETTING.token_e,
         _ => &SETTING.token_a,
     };
-
-    let from_user = client.query_one(st, &[&from]).await?;
-    let to_user = client.query_one(st, &[&to]).await?;
 
     transfer_token(
         w3,
